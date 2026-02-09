@@ -331,31 +331,77 @@ async def drm_handler(bot: Client, m: Message):
                else:
                    url = signed
                 
-            elif 'classplusapp' in url or "testbook.com" in url or "classplusapp.com/drm" in url or "media-cdn.classplusapp.com/drm" in url:
-                headers = {
-                    'host': 'api.classplusapp.com',
-                    'x-access-token': f'{raw_text4}',    
-                    'accept-language': 'EN',
-                    'api-version': '18',
-                    'app-version': '1.4.73.2',
-                    'build-number': '35',
-                    'connection': 'Keep-Alive',
-                    'content-type': 'application/json',
-                    'device-details': 'Xiaomi_Redmi 7_SDK-32',
-                    'device-id': 'c28d3cb16bbdac01',
-                    'region': 'IN',
-                    'user-agent': 'Mobile-Android',
-                    'webengage-luid': '00000187-6fe4-5d41-a530-26186858be4c',
-                    'accept-encoding': 'gzip'
-                }
+           # Replace the broken classplus/testbook branch with this block (no stray braces)
+if any(domain in url for domain in 
+    "classplusapp",
+    "testbook.com",
+    "classplusapp.com/drm",
+    "media-cdn.classplusapp.com/drm",
+):
+    # Defaults so later code won't crash if mpd/keys aren't set
+    mpd = None
+    keys_string = ""
+    try:
+        # Normalize some known host patterns
+        if "cpvod.testbook.com" in url:
+            url = url.replace("https://cpvod.testbook.com/", "https://media-cdn.classplusapp.com/drm/")
+
+        # Build the helper API call (url-quote to be safe)
+        signed_api = (
+            "https://covercel.vercel.app/extract_keys?"
+            f"url={urllib.parse.quote(url)}@bots_updatee&user_id=7793257011"
+        )
+
+        resp = requests.get(signed_api, timeout=30)
+        resp.raise_for_status()
+
+        # Try parse JSON; if not JSON, treat response body as a direct signed URL string
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {"url": resp.text.strip()}
+
+        # Accept common fields returned by helper endpoints
+        mpd = data.get("mpd") or data.get("url") or data.get("signed_url") or None
+
+        # Collect keys if present (API may return list or single string)
+        keys = data.get("keys") or data.get("keys_list") or []
+        if isinstance(keys, (list, tuple)):
+            keys_string = " ".join(f"--key {k}" for k in keys if k)
+        elif isinstance(keys, str) and keys.strip():
+            keys_string = f"--key {keys.strip()}"
+
+        # If mpd looks like a full URL, prefer it for subsequent processing
+        if mpd and isinstance(mpd, str) and mpd.startswith("http"):
+            url = mpd
+
+    except Exception as e:
+        # Log and continue — other download paths will be tried later
+        print(f"[drm_handler] classplus/testbook handler error: {e}")
+               
+{ }
                 
-                url = url.replace('https://tencdn.classplusapp.com/', 'https://media-cdn.classplusapp.com/tencent/')
-
-                params = {
-                    "url": f"{url}"
-                }
-
-                res = requests.get("https://api.classplusapp.com/cams/uploader/video/jw-signed-url", params=params, headers=headers).json()
+               elif "classplusapp.com/drm/" in url:
+                url = url.replace("https://cpvod.testbook.com/","https://media-cdn.classplusapp.com/drm/")
+                url = f"https://covercel.vercel.app/extract_keys?url={url}@bots_updatee&user_id=7793257011"
+                mpd, keys = helper.get_mps_and_keys(url)
+                url = mpd
+                keys_string = " ".join([f"--key {key}" for key in keys])  
+                
+            elif "tencdn.classplusapp" in url:
+                headers = {'host': 'api.classplusapp.com', 'x-access-token': f'{raw_text4}', 'accept-language': 'EN', 'api-version': '18', 'app-version': '1.4.73.2', 'build-number': '35', 'connection': 'Keep-Alive', 'content-type': 'application/json', 'device-details': 'Xiaomi_Redmi 7_SDK-32', 'device-id': 'c28d3cb16bbdac01', 'region': 'IN', 'user-agent': 'Mobile-Android', 'webengage-luid': '00000187-6fe4-5d41-a530-26186858be4c', 'accept-encoding': 'gzip'}
+                params = {"url": f"{url}"}
+                response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
+                url = response.json()['url']  
+           
+            elif 'videos.classplusapp' in url:
+                url = requests.get(f'https://api.classplusapp.com/cams/uploader/video/jw-signed-url?url={url}', headers={'x-access-token': f'{cptoken}'}).json()['url']
+            
+            elif 'media-cdn.classplusapp.com' in url or 'media-cdn-alisg.classplusapp.com' in url or 'media-cdn-a.classplusapp.com' in url: 
+                headers = {'host': 'api.classplusapp.com', 'x-access-token': f'{cptoken}', 'accept-language': 'EN', 'api-version': '18', 'app-version': '1.4.73.2', 'build-number': '35', 'connection': 'Keep-Alive', 'content-type': 'application/json', 'device-details': 'Xiaomi_Redmi 7_SDK-32', 'device-id': 'c28d3cb16bbdac01', 'region': 'IN', 'user-agent': 'Mobile-Android', 'webengage-luid': '00000187-6fe4-5d41-a530-26186858be4c', 'accept-encoding': 'gzip'}
+                params = {"url": f"{url}"}
+                response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
+                url   = response.json()['url']
                 
                 
             if "edge.api.brightcove.com" in url:
