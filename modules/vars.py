@@ -5,10 +5,10 @@ from os import environ
 
 API_ID = int(environ.get("API_ID", "27473563"))
 API_HASH = environ.get("API_HASH", "bc2ea0765ac96bb474891b0243f44390")
-BOT_TOKEN = environ.get("BOT_TOKEN", " ")
+BOT_TOKEN = environ.get("BOT_TOKEN", "8079475622:AAFRasQmKozum_FAVXo4VM-KdpPm8KYETvw")
 
 OWNER = int(environ.get("OWNER", "6363345131"))
-CREDIT = environ.get("CREDIT", '𓍯𝙎𝙪𝙟𝙖𝙡⚝')
+CREDIT = environ.get("CREDIT", 'App deep')
 cookies_file_path = os.getenv("cookies_file_path", "youtube_cookies.txt")
 
 TOTAL_USER = os.environ.get('TOTAL_USERS', ''6252997817,6363345131').split(',')
@@ -33,6 +33,7 @@ photoyt = 'https://tinypic.host/images/2025/03/18/YouTube-Logo.wine.png' #https:
 photocp = 'https://tinypic.host/images/2025/03/28/IMG_20250328_133126.jpg'
 photozip = 'https://envs.sh/cD_.jpg'
 # .....,.....,.......,...,.......,....., .....,.....,.......,...,.
+
 
 
 
